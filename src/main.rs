@@ -8,7 +8,7 @@ use commands::Commands;
 use std::error::Error;
 
 #[derive(Parser)]
-#[command(name = "glinet-router", about = "Manage GL.iNet router resources")]
+#[command(about = "Manage GL.iNet router resources")]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -44,8 +44,12 @@ async fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
             handler::check_update(&download_dir, &upload_target).await?;
         }
 
-        Commands::CheckCustomRules { host, file } => {
-            handler::check_custom_rules(&host, &file)?;
+        Commands::CustomRules {
+            host,
+            file,
+            command,
+        } => {
+            handler::custom_rules(&host, &file, command)?;
         }
 
         Commands::OpenClash { host, command } => {
@@ -63,6 +67,52 @@ async fn run(cli: Cli) -> Result<(), Box<dyn Error>> {
 mod tests {
     use super::*;
     use clap::error::ErrorKind;
+    use commands::CustomRulesCommands;
+
+    #[test]
+    fn parses_custom_rules_subcommands() {
+        for subcommand in ["check", "edit"] {
+            let cli = Cli::try_parse_from(["glinet-router", "custom-rules", subcommand]).unwrap();
+            let Commands::CustomRules {
+                host,
+                file,
+                command,
+            } = cli.command
+            else {
+                panic!("Expected custom-rules command");
+            };
+            assert_eq!(host, "router-gl-be3600");
+            assert_eq!(file, "openclash_custom_rules.list");
+            assert!(matches!(
+                (subcommand, command),
+                ("check", CustomRulesCommands::Check) | ("edit", CustomRulesCommands::Edit)
+            ));
+        }
+    }
+
+    #[test]
+    fn parses_custom_rules_options() {
+        let cli = Cli::try_parse_from([
+            "glinet-router",
+            "custom-rules",
+            "--host",
+            "other-router",
+            "--file",
+            "other.list",
+            "check",
+        ])
+        .unwrap();
+        let Commands::CustomRules {
+            host,
+            file,
+            command: CustomRulesCommands::Check,
+        } = cli.command
+        else {
+            panic!("Expected custom-rules check command");
+        };
+        assert_eq!(host, "other-router");
+        assert_eq!(file, "other.list");
+    }
 
     #[test]
     fn parses_default_paths() {
@@ -122,6 +172,9 @@ mod tests {
     fn rejects_unknown_commands_and_extra_arguments() {
         for args in [
             vec!["glinet-router", "unknown"],
+            vec!["glinet-router", "check-custom-rules"],
+            vec!["glinet-router", "custom-rules"],
+            vec!["glinet-router", "custom-rules", "unknown"],
             vec!["glinet-router", "check-update", "extra"],
             vec!["glinet-router", "check-update", "--download-dir"],
             vec!["glinet-router", "check-update", "--upload-target"],

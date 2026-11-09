@@ -48,6 +48,16 @@ pub(crate) async fn download(
     Ok(file_path)
 }
 
+pub(crate) fn nvim_edit_scp(host: &str, file_path: &Path) -> Result<(), Box<dyn Error>> {
+    // nvim scp://router-gl-be3600//etc/openclash/custom/openclash_custom_rules.list
+    let scp_path = format!("scp://{}//{}", host, file_path.display());
+    let status = Command::new("nvim").arg(&scp_path).status()?;
+    if !status.success() {
+        return Err(format!("nvim scp edit failed: {status}").into());
+    }
+    Ok(())
+}
+
 pub(crate) fn scp_upload(file_path: &Path, dst: &str) -> Result<(), Box<dyn Error>> {
     let status = Command::new("scp")
         .arg("--")

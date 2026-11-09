@@ -115,24 +115,36 @@ pub(crate) async fn check_update(
     }
 }
 
-pub(crate) fn check_custom_rules(host: &str, filename: &str) -> Result<(), Box<dyn Error>> {
+pub(crate) fn custom_rules(
+    host: &str,
+    filename: &str,
+    subcommand: commands::CustomRulesCommands,
+) -> Result<(), Box<dyn Error>> {
+    use commands::CustomRulesCommands;
+
     let file_path = format!("/etc/openclash/custom/{filename}");
-    let content = utils::ssh_cat(host, &file_path)?;
 
-    let mut output = io::stdout().lock();
+    match subcommand {
+        CustomRulesCommands::Check => {
+            let content = utils::ssh_cat(host, &file_path)?;
 
-    let filtered = content
-        .lines()
-        .filter(|ln| !ln.is_empty() && !ln.starts_with("##"))
-        .collect::<Vec<_>>()
-        .join("\n");
+            let mut output = io::stdout().lock();
 
-    writeln!(
-        output,
-        "Custom rules from `{host}:{file_path}`:\n{}",
-        filtered.yellow()
-    )?;
-    Ok(())
+            let filtered = content
+                .lines()
+                .filter(|ln| !ln.is_empty() && !ln.starts_with("##"))
+                .collect::<Vec<_>>()
+                .join("\n");
+
+            writeln!(
+                output,
+                "Custom rules from `{host}:{file_path}`:\n{}",
+                filtered.yellow()
+            )?;
+            Ok(())
+        }
+        CustomRulesCommands::Edit => utils::nvim_edit_scp(host, Path::new(&file_path)),
+    }
 }
 
 pub(crate) fn openclash(
