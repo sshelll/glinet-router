@@ -83,7 +83,7 @@ pub(crate) enum CustomRulesCommands {
     /// Check custom rules
     Check,
 
-    /// Edit custom rules (not implemented yet)
+    /// Edit custom rules
     Edit,
 }
 
