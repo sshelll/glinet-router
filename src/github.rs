@@ -3,7 +3,7 @@ use std::error::Error;
 use std::time::Duration;
 
 const GITHUB_OWNER: &str = "wkccd";
-const GITHUB_REPO: &str = "CloudRunFilesBuilder";
+const GITHUB_REPO: &str = "dailybuild";
 
 pub struct GithubService {
     client: Octocrab,
